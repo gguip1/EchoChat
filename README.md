@@ -47,7 +47,4 @@ pip install -r requirements.txt
 - `/demo_cli.py`: CLI 기반 데모 실행 파일
 - `/demo.py`: Streamlit을 이용한 웹 데모 실행 파일
 
-## 라이센스
-프로젝트 라이센스 정보...
-
 
