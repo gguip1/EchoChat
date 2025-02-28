@@ -1,10 +1,18 @@
 import pandas as pd
 import ollama
+import os
+
+from google import genai
+from google.genai.types import Content, Part
+from dotenv import load_dotenv
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
 from collections import Counter
+
+load_dotenv()
+GEMENI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 class EOChat:
     def __init__(self, df_chat, speaker, model="llama3.1:8b", history_limit=5):
@@ -114,24 +122,67 @@ class EOChat:
         
         return prompt
     
+    # def generate_response(self, user_input):
+    #     """Generate a response using the Ollama model"""
+    #     self.add_message("user", user_input)
+        
+    #     prompt = self.generate_prompt(user_input)
+        
+    #     response = ollama.chat(
+    #         model=self.model,
+    #         messages=[
+    #             {"role": "system", "content": "너는 대화 스타일을 유지하면서 자연스럽게 응답하는 AI야."},
+    #             {"role": "user", "content": prompt}
+    #         ]
+    #     )
+        
+    #     bot_response = response["message"]["content"]
+    #     self.add_message(self.speaker, bot_response)
+        
+    #     return response
+    
     def generate_response(self, user_input):
         """Generate a response using the Ollama model"""
         self.add_message("user", user_input)
         
         prompt = self.generate_prompt(user_input)
+                
+        client = genai.Client(api_key=GEMENI_API_KEY)
         
-        response = ollama.chat(
-            model=self.model,
-            messages=[
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-lite",
+            contents=[
                 {"role": "system", "content": "너는 대화 스타일을 유지하면서 자연스럽게 응답하는 AI야."},
                 {"role": "user", "content": prompt}
             ]
         )
         
-        bot_response = response["message"]["content"]
+        # bot_response = response["message"]["content"]
+        bot_response = response.text
         self.add_message(self.speaker, bot_response)
         
         return response
+    
+    # def generate_response_stream(self, user_input):
+    #     """Generate a response using the Ollama model (streaming version)"""
+    #     self.add_message("user", user_input)
+        
+    #     prompt = self.generate_prompt(user_input)
+        
+    #     response = ollama.chat(
+    #         model=self.model,
+    #         messages=[
+    #             {"role": "system", "content": "너는 대화 스타일을 유지하면서 자연스럽게 응답하는 AI야."},
+    #             {"role": "user", "content": prompt}
+    #         ],
+    #         stream=True
+    #     )
+        
+    #     bot_response = ""
+    #     for chunk in response:
+    #         content = chunk["message"]["content"]
+    #         bot_response += content
+    #         yield content
     
     def generate_response_stream(self, user_input):
         """Generate a response using the Ollama model (streaming version)"""
@@ -139,18 +190,20 @@ class EOChat:
         
         prompt = self.generate_prompt(user_input)
         
-        response = ollama.chat(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "너는 대화 스타일을 유지하면서 자연스럽게 응답하는 AI야."},
-                {"role": "user", "content": prompt}
-            ],
-            stream=True
+        client = genai.Client(api_key=GEMENI_API_KEY)
+
+        response = client.models.generate_content_stream(
+            model="gemini-2.0-flash-lite",
+            contents=[
+                Content(role="user", parts=[Part(text="너는 대화 스타일을 유지하면서 자연스럽게 응답하는 AI야.")]),
+                Content(role="user", parts=[Part(text=prompt)])
+            ]
         )
+
         
         bot_response = ""
         for chunk in response:
-            content = chunk["message"]["content"]
+            content = chunk.text
             bot_response += content
             yield content
     
