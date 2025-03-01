@@ -7,14 +7,14 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 import pandas as pd
 from langchain_core.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_community.llms import Ollama
+from langchain_ollama import ChatOllama
 from langchain_core.runnables import RunnableSequence
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import Counter
 
 class EchoChat:
-    def __init__(self, df_chat, speaker, model_type, history_limit=5):
+    def __init__(self, df_chat, speaker, model_type, history_limit=5, debug=False):
         """
         EchoChat Initialization
         :param df_chat: DataFrame containing chat history
@@ -22,7 +22,10 @@ class EchoChat:
         :param model_type: Model type for the chatbot ('gemini' or 'llama')
         :param history_limit: Number of previous messages to consider
         """
-        self.DEBUG = False
+        self.DEBUG = debug
+        
+        if self.DEBUG:
+            print("Debug On...")
         
         self.df_chat = df_chat
         self.speaker = speaker
@@ -34,7 +37,7 @@ class EchoChat:
         if model_type == "gemini":
             self.llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash-lite", google_api_key=GEMINI_API_KEY, streaming=True)
         else:
-            self.llm = Ollama(model="llama3.1:8b", streaming=True)
+            self.llm = ChatOllama(model="llama3.1:8b", streaming=True)
         
         # self.prompt = PromptTemplate(
         #     input_variables=["speaker", "avg_length", "top_words", "history_text", "recent_conversations", "user_input"],
@@ -143,7 +146,8 @@ class EchoChat:
         }
         
         if self.DEBUG:
-            print(input_data)
+            for key, value in input_data.items():
+                print(f"{key}: {value}")
         
         response = self.chain.run(input_data)
 
@@ -166,7 +170,8 @@ class EchoChat:
         }
         
         if self.DEBUG:
-            print(input_data)
+            for key, value in input_data.items():
+                print(f"{key}: {value}")
         
         response_stream = self.chain.stream(input_data)
         
